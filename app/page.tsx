@@ -1,8 +1,31 @@
-"use client"
+"use client";
+import axios from 'axios';
+const BACKEND_URL = 'http://localhost:4000';
+
+// This is a sample axios get request
+axios.get(BACKEND_URL)
+  .then(response => {
+    console.log(response);
+  })
+  .catch(error => {
+    console.log(error);
+  });
+
+// This is a simple axios post request
+axios.post(`${BACKEND_URL}/api/v1/swarm/write-ops/createFile`, {
+  filename: "C:/Users/siddh/OneDrive/Desktop/MyFolder/connected.txt"
+})
+.then(response => {
+  console.log(response);
+})
+.catch(error => {
+  console.log("This is the create-file error: ");
+  console.log(error);
+});
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
