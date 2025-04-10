@@ -1,5 +1,7 @@
 "use client";
 import axios from 'axios';
+import Cron from 'react-cron-generator';
+import 'react-cron-generator/dist/cron-builder.css';
 const BACKEND_URL = 'http://localhost:3000';
 
 
@@ -568,57 +570,34 @@ function PeriodicTaskForm({ onAddTask }: { onAddTask: (data: any) => void }) {
       path,
     })
 
-    // Reset form
     setPath("")
   }
+  const [state, setState] = useState({ value: '', text: '' });
+
+  const handleSubmit2 = () => {
+    console.log('Cron Expression:', state.value);
+    console.log('Human Text:', state.text);
+  };
 
   return (
-    <Card className="bg-zinc-900 border-zinc-800 ">
-      <CardHeader className="text-cyan-50">
-        <CardTitle>Add Periodic Task</CardTitle>
-        <CardDescription className="text-zinc-400">Schedule a recurring task</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label className="text-zinc-400">Frequency</Label>
-            <Select value={frequency} onValueChange={setFrequency}>
-              <SelectTrigger className="bg-white border-zinc-800">
-                <SelectValue placeholder="Select frequency" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border-zinc-800">
-                <SelectItem value="Hourly">Hourly</SelectItem>
-                <SelectItem value="Daily">Daily</SelectItem>
-                <SelectItem value="Weekly">Weekly</SelectItem>
-                <SelectItem value="Monthly">Monthly</SelectItem>
-                <SelectItem value="Custom">Custom Cron</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+    <div>
+      <h2>Cron Scheduler</h2>
+      <Cron
+        onChange={(e, text) => {
+          setState({ value: e, text: text });
+        }}
+        value={state.value}
+        showResultText={true}
+        showResultCron={true}
+      />
+      <div style={{ marginTop: '20px' }}>
+        <button onClick={handleSubmit2}>Submit</button>
+      </div>
+      <div>
+        <p><strong>Selected cron:</strong> {state.value}</p>
+        <p><strong>Description:</strong> {state.text}</p>
+      </div>
+    </div>
+  );
 
-          {frequency === "Custom" && (
-            <div className="space-y-2">
-              <Label className="text-zinc-400">Cron Expression</Label>
-              <Input placeholder="* * * * *" className="bg-zinc-950 border-zinc-800" />
-              <p className="text-xs text-zinc-500">Format: minute hour day month weekday</p>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label className="text-zinc-400">Execution Path</Label>
-            <Input
-              placeholder="Enter path or command to execute"
-              value={path}
-              onChange={(e) => setPath(e.target.value)}
-              className="bg-white border-zinc-800"
-            />
-          </div>
-
-          <Button type="submit" disabled={!frequency || !path} className="bg-purple-700 hover:bg-purple-600">
-            Add Task
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
-  )
 }
