@@ -128,6 +128,9 @@ importers:
       react:
         specifier: ^19
         version: 19.1.0
+      react-cron-generator:
+        specifier: ^2.0.19
+        version: 2.0.19(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       react-day-picker:
         specifier: 8.10.1
         version: 8.10.1(date-fns@4.1.0)(react@19.1.0)
@@ -1175,6 +1178,10 @@ packages:
     resolution: {integrity: sha512-NOKm8xhkzAjzFx8B2v5OAHT+u5pRQc2UCa2Vq9jYL/31o2wi9mxBA7LIFs3sV5VSC49z6pEhfbMULvShKj26WA==}
     engines: {node: '>= 6'}
 
+  cronstrue@2.59.0:
+    resolution: {integrity: sha512-YKGmAy84hKH+hHIIER07VCAHf9u0Ldelx1uU6EBxsRPDXIA1m5fsKmJfyC3xBhw6cVC/1i83VdbL4PvepTrt8A==}
+    hasBin: true
+
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
@@ -1628,6 +1635,12 @@ packages:
 
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
+
+  react-cron-generator@2.0.19:
+    resolution: {integrity: sha512-dcNDeT1gmwi5nLw0DNkB7sm5d6pZo4KS/6gm95C5A4fl21liQDTCKJKTPyHNEQOp/fQAVnzSX39UzIcIppJVbA==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
 
   react-day-picker@8.10.1:
     resolution: {integrity: sha512-TMx7fNbhLk15eqcMt+7Z7S2KF7mfTId/XJDjKE8f+IUcFn0l08/kI4FiYTL/0yuOLmEcbR4Fwe3GJf/NiiMnPA==}
@@ -2926,6 +2939,8 @@ snapshots:
 
   commander@4.1.1: {}
 
+  cronstrue@2.59.0: {}
+
   cross-spawn@7.0.6:
     dependencies:
       path-key: 3.1.1
@@ -3323,6 +3338,12 @@ snapshots:
   proxy-from-env@1.1.0: {}
 
   queue-microtask@1.2.3: {}
+
+  react-cron-generator@2.0.19(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
+    dependencies:
+      cronstrue: 2.59.0
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
 
   react-day-picker@8.10.1(date-fns@4.1.0)(react@19.1.0):
     dependencies:

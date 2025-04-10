@@ -1,7 +1,8 @@
 "use client";
 import axios from 'axios';
-const BACKEND_URL = 'http://localhost:3000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
+console.log("Backend URL:", BACKEND_URL);
 
 import type React from "react"
 
@@ -370,9 +371,9 @@ function NonPeriodicTaskForm({ onAddTask }: { onAddTask: (data: any) => void }) 
       let response:any;
       if(operation==="read-ops"){
         console.log(body);
-        response = await axios.post(`http://localhost:3000/api/v1/swarm/${operation}`, body);
+        response = await axios.post(`${BACKEND_URL}/api/v1/swarm/${operation}`, body);
       }else{
-        response = await axios.post(`http://localhost:3000/api/v1/swarm/${operation}`, body);
+        response = await axios.post(`${BACKEND_URL}/api/v1/swarm/${operation}`, body);
       }
       console.log('Done :', response.data);
       
@@ -490,7 +491,7 @@ function PeriodicTaskForm({ onAddTask }: { onAddTask: (data: any) => void }) {
 
   async function PeridOPS(body: any) {
     try {
-      const response = await axios.post(`http://localhost:3000/app/v1/swarm/getDiskStorageEmail/`, body);
+      const response = await axios.post(`${BACKEND_URL}/app/v1/swarm/getDiskStorageEmail/`, body);
       console.log('Done :', response.data);
       
       return response.data;
