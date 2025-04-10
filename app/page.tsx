@@ -1,6 +1,6 @@
 "use client";
 import axios from 'axios';
-const BACKEND_URL = 'http://localhost:4000';
+const BACKEND_URL = 'http://localhost:3000';
 
 // This is a sample axios get request
 axios.get(BACKEND_URL)
@@ -8,12 +8,14 @@ axios.get(BACKEND_URL)
     console.log(response);
   })
   .catch(error => {
+    console.log("Unable to contact with backend.")
     console.log(error);
   });
 
 // This is a simple axios post request
-axios.post(`${BACKEND_URL}/api/v1/swarm/write-ops/createFile`, {
-  filename: "C:/Users/siddh/OneDrive/Desktop/MyFolder/connected.txt"
+axios.post(`${BACKEND_URL}/api/v1/swarm/write-ops`, {
+  taskName : 'create-folder',
+  targetName : "/home/hp/developmnt/new1"
 })
 .then(response => {
   console.log(response);
