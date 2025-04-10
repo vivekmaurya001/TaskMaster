@@ -31,27 +31,22 @@ The backend of AutoChronos is designed to handle job scheduling and execution wi
 
 2. **Install dependencies**
     ```bash
-    npm install
+    pnpm install
     ```
 
-3. **Create `.env.local` file**
-    ```
-    NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
-    ```
-
-4. **Run the development server**
+3. **Run the development server**
     ```bash
-    npm run dev
+    pnpm dev
     ```
 
-5. Open [http://localhost:3000](http://localhost:3000) to view the site.
+5. Open [http://localhost:3001](http://localhost:3000) to view the site.
 
 ---
 
 ## 🌐 Deployed Links
 
-- **Frontend (Vercel):** [http://localhost:3000](http://localhost:3000)
-- **Backend (Render):** [http://localhost:3001](http://localhost:3001)
+- **Frontend (Vercel):** [http://localhost:3001](http://localhost:3000)
+- **Backend (Render):** [http://localhost:3000](http://localhost:3001)
 
 ---
 
