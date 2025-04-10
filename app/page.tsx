@@ -2,28 +2,6 @@
 import axios from 'axios';
 const BACKEND_URL = 'http://localhost:3000';
 
-// This is a sample axios get request
-axios.get(BACKEND_URL)
-  .then(response => {
-    console.log(response);
-  })
-  .catch(error => {
-    console.log("Unable to contact with backend.")
-    console.log(error);
-  });
-
-// This is a simple axios post request
-axios.post(`${BACKEND_URL}/api/v1/swarm/write-ops`, {
-  taskName : 'create-folder',
-  targetName : "/home/hp/developmnt/new1"
-})
-.then(response => {
-  console.log(response);
-})
-.catch(error => {
-  console.log("This is the create-file error: ");
-  console.log(error);
-});
 
 import type React from "react"
 
@@ -55,16 +33,6 @@ import {
   Loader2,
   ArrowUpDown,
 } from "lucide-react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Progress } from "@/components/ui/progress"
 
 // Dummy data for tasks
 const initialTasks = [
@@ -126,7 +94,7 @@ const initialTasks = [
 ]
 
 // Dummy logs
-const initialLogs = [
+let initialLogs = [
   "[2025-04-09 10:00:01] [worker-03] Task #1 started: /usr/local/bin/backup-db.sh",
   "[2025-04-09 10:00:03] [worker-03] Task #1 completed successfully in 2.1s",
   "[2025-04-09 09:51:20] [worker-01] Task #4 started: Writing to /var/www/html/config/settings.json",
@@ -143,10 +111,46 @@ const initialLogs = [
   "[2025-04-09 00:00:12] [worker-02] Task #3 completed successfully in 2.4s",
 ]
 
+interface LogInfo {
+  _id: string;
+  machineId: string;
+  command: string;
+  result: any;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Define an interface for the API response structure
+interface LogsResponse {
+  statusCode: number;
+  message: string;
+  info: LogInfo[];
+}
+
+// A simple Modal component using TailwindCSS
+
+
+
 export default function JobScheduler() {
   const [logs, setLogs] = useState<string[]>(initialLogs)
+  const [result, setResult] = useState<string>("")
   const [tasks, setTasks] = useState<any[]>(initialTasks)
   const [activeTab, setActiveTab] = useState("dashboard")
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  function Modal({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => void, children: React.ReactNode }) {
+    if (!isOpen) return null;
+  
+    return (
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        {/* Backdrop */}
+        <div className="absolute inset-0 bg-black opacity-50" onClick={onClose}></div>
+        {/* Modal content */}
+        <div className="relative bg-white p-6 rounded shadow-md z-10 w-11/12 max-w-md">
+          {children}
+        </div>
+      </div>
+    );
+  }
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString()
@@ -155,6 +159,30 @@ export default function JobScheduler() {
       .replace(/\//g, "-")
     setLogs((prev) => [`[${date} ${timestamp}] [system] ${message}`, ...prev])
   }
+  async function fetchLogs(): Promise<string[]> {
+    try {
+      // Tell axios to expect a LogsResponse type
+      const response = await axios.get<LogsResponse>(`${BACKEND_URL}/api/v1/swarm/getlog/`);
+      const fetchedLogs = response.data.info;
+  
+      // Map each fetched log object to a formatted string
+      setTasks(fetchedLogs);
+      console.log("hiashic", fetchedLogs)
+      const formattedLogs = fetchedLogs.map((log) => {
+        const timestamp = new Date(log.createdAt).toLocaleString();
+        return `[${timestamp}] [${log.machineId}] executed command: ${log.command}`;
+      });
+      console.log(formattedLogs);
+      initialLogs = formattedLogs; // Update initialLogs with fetched logs
+  
+      return formattedLogs;
+    } catch (error) {
+      console.error('Error fetching logs:', error);
+      throw error;
+    }
+  }
+
+
 
   const handleAddTask = (type: "periodic" | "non-periodic", data: any) => {
     const newTask = {
@@ -222,13 +250,8 @@ export default function JobScheduler() {
     }
   }
 
-  // Count tasks by status
-  const completedTasks = tasks.filter((t) => t.status === "completed").length
-  const failedTasks = tasks.filter((t) => t.status === "failed").length
-  const pendingTasks = tasks.filter((t) => t.status === "pending").length
-  const totalTasks = tasks.length
-
   return (
+    <>
     <div className="min-h-screen bg-zinc-950 text-zinc-200">
       {/* Header */}
       <header className="border-b border-zinc-800 bg-zinc-900 sticky top-0 z-10">
@@ -239,119 +262,10 @@ export default function JobScheduler() {
             </div>
             <span>TaskMaster</span>
           </div>
-          <div className="ml-auto flex items-center gap-4">
-            <Button variant="outline" size="icon" className="text-zinc-400 border-zinc-800">
-              <Search className="h-4 w-4" />
-              <span className="sr-only">Search</span>
-            </Button>
-            <Button variant="outline" size="icon" className="text-zinc-400 border-zinc-800">
-              <Bell className="h-4 w-4" />
-              <span className="sr-only">Notifications</span>
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 flex items-center gap-2 text-zinc-400">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src="/placeholder.svg?height=32&width=32" alt="@admin" />
-                    <AvatarFallback>AD</AvatarFallback>
-                  </Avatar>
-                  <span className="hidden md:inline-flex">Admin</span>
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">Admin</p>
-                    <p className="text-xs leading-none text-muted-foreground">admin@example.com</p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem>Settings</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Log out</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
         </div>
       </header>
 
       <div className="flex">
-        {/* Sidebar */}
-        <aside className="hidden md:flex w-64 flex-col bg-zinc-900 border-r border-zinc-800 min-h-[calc(100vh-4rem)]">
-          <div className="p-4">
-            <nav className="space-y-1">
-              <Button
-                variant={activeTab === "dashboard" ? "secondary" : "ghost"}
-                className="w-full justify-start"
-                onClick={() => setActiveTab("dashboard")}
-              >
-                <LayoutDashboard className="mr-2 h-4 w-4" />
-                Dashboard
-              </Button>
-              <Button
-                variant={activeTab === "tasks" ? "secondary" : "ghost"}
-                className="w-full justify-start"
-                onClick={() => setActiveTab("tasks")}
-              >
-                <ListTodo className="mr-2 h-4 w-4" />
-                Tasks
-              </Button>
-              <Button
-                variant={activeTab === "history" ? "secondary" : "ghost"}
-                className="w-full justify-start"
-                onClick={() => setActiveTab("history")}
-              >
-                <History className="mr-2 h-4 w-4" />
-                History
-              </Button>
-              <Button
-                variant={activeTab === "logs" ? "secondary" : "ghost"}
-                className="w-full justify-start"
-                onClick={() => setActiveTab("logs")}
-              >
-                <Terminal className="mr-2 h-4 w-4" />
-                Logs
-              </Button>
-              <Button
-                variant={activeTab === "settings" ? "secondary" : "ghost"}
-                className="w-full justify-start"
-                onClick={() => setActiveTab("settings")}
-              >
-                <Settings className="mr-2 h-4 w-4" />
-                Settings
-              </Button>
-            </nav>
-          </div>
-
-          <div className="mt-auto p-4 border-t border-zinc-800">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-zinc-400">CPU Usage</span>
-                  <span className="text-zinc-400">24%</span>
-                </div>
-                <Progress value={24} className="h-1" />
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-zinc-400">Memory Usage</span>
-                  <span className="text-zinc-400">42%</span>
-                </div>
-                <Progress value={42} className="h-1" />
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-zinc-400">Disk Usage</span>
-                  <span className="text-zinc-400">68%</span>
-                </div>
-                <Progress value={68} className="h-1" />
-              </div>
-            </div>
-          </div>
-        </aside>
-
         {/* Main content */}
         <main className="flex-1 p-6 overflow-auto">
           {activeTab === "dashboard" && (
@@ -359,57 +273,7 @@ export default function JobScheduler() {
               <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold">Dashboard</h1>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" className="border-zinc-800 text-zinc-400">
-                    <ArrowUpDown className="mr-2 h-4 w-4" />
-                    Sort
-                  </Button>
-                  <Button className="bg-purple-700 hover:bg-purple-600">
-                    <Clock className="mr-2 h-4 w-4" />
-                    New Task
-                  </Button>
                 </div>
-              </div>
-
-              {/* Stats cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <Card className="bg-zinc-900 border-zinc-800">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-zinc-400">Total Tasks</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{totalTasks}</div>
-                    <p className="text-xs text-zinc-500 mt-1">+2 from yesterday</p>
-                  </CardContent>
-                </Card>
-                <Card className="bg-zinc-900 border-zinc-800">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-zinc-400">Completed</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-green-400">{completedTasks}</div>
-                    <p className="text-xs text-zinc-500 mt-1">
-                      {((completedTasks / totalTasks) * 100).toFixed(0)}% success rate
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card className="bg-zinc-900 border-zinc-800">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-zinc-400">Failed</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-red-400">{failedTasks}</div>
-                    <p className="text-xs text-zinc-500 mt-1">-1 from yesterday</p>
-                  </CardContent>
-                </Card>
-                <Card className="bg-zinc-900 border-zinc-800">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-zinc-400">Pending</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-yellow-400">{pendingTasks}</div>
-                    <p className="text-xs text-zinc-500 mt-1">Next execution in 45m</p>
-                  </CardContent>
-                </Card>
               </div>
 
               {/* Task form and recent tasks */}
@@ -449,30 +313,27 @@ export default function JobScheduler() {
                           <p className="text-sm text-zinc-500">No tasks scheduled yet</p>
                         ) : (
                           <div className="space-y-3">
-                            {tasks.slice(0, 5).map((task) => (
+                            {tasks.map((task) => (
                               <div
-                                key={task.id}
+                                key={task._id}
                                 className="p-3 border border-zinc-800 rounded-md text-sm bg-zinc-950/50"
                               >
                                 <div className="flex justify-between items-start">
                                   <div className="font-medium flex items-center">
-                                    {task.type === "periodic" ? (
-                                      <Calendar className="mr-2 h-4 w-4 text-purple-400" />
-                                    ) : (
-                                      <Clock className="mr-2 h-4 w-4 text-blue-400" />
-                                    )}
+                                    <Calendar className="mr-2 h-4 w-4 text-purple-400" />
                                     <span className="truncate max-w-[150px] text-white">
-                                      {task.path.split("/").pop() || task.path}
+                                      {task.command}
                                     </span>
                                   </div>
-                                  {getStatusBadge(task.status)}
+                                  <Button className={`bg-gray-900 ${!task.result ? 'hidden' : ''}`}  onClick={()=>{
+                                    setResult(task.result);
+                                    setIsModalOpen(true);
+                                  }}>See detail</Button>
                                 </div>
                                 <div className="text-xs text-zinc-500 mt-2 space-y-1">
-                                  {task.type === "non-periodic" && <div>Operation: {task.operation}</div>}
-                                  {task.type === "periodic" && <div>Frequency: {task.frequency}</div>}
-                                  <div>Worker: {task.workerId}</div>
-                                  {task.lastRun && <div>Last run: {task.lastRun}</div>}
-                                  {task.nextRun && <div>Next run: {task.nextRun}</div>}
+                                  <div>Operation: {task.command && task.command.trim().split(' ')[0]}</div>
+                                  <div>Worker: {task.machineId}</div>
+                                  {task.createdAt && <div>Last run: {task.createdAt}</div>}
                                 </div>
                               </div>
                             ))}
@@ -490,23 +351,23 @@ export default function JobScheduler() {
           <Card className="mt-6 bg-zinc-900 border-zinc-800">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="text-lg">System Logs</CardTitle>
+                <CardTitle className="text-lg text-white">System Logs</CardTitle>
                 <CardDescription className="text-zinc-400">Real-time execution logs</CardDescription>
               </div>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => addLog("Manual log entry")}
-                  className="text-xs border-zinc-800 text-zinc-400"
+                  onClick={() => fetchLogs().then(setLogs)}
+                  className="text-xs border-zinc-800 text-black"
                 >
-                  Add Test Log
+                  Fetch Logs
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setLogs([])}
-                  className="text-xs border-zinc-800 text-zinc-400"
+                  onClick={() => setIsModalOpen(true)}
+                  className="text-xs border-zinc-800 text-black"
                 >
                   Clear Logs
                 </Button>
@@ -517,10 +378,11 @@ export default function JobScheduler() {
                 {logs.map((log, index) => {
                   // Color-code different log types
                   let logClass = "text-zinc-400"
-                  if (log.includes("completed successfully")) logClass = "text-green-400"
-                  if (log.includes("failed")) logClass = "text-red-400"
-                  if (log.includes("started")) logClass = "text-blue-400"
-                  if (log.includes("scheduled")) logClass = "text-yellow-400"
+                  let num=Math.floor(Math.random()*4);
+                  if (num==1) logClass = "text-green-400"
+                  if (num==2) logClass = "text-red-400"
+                  if (num==3) logClass = "text-blue-400"
+                  if (num==4) logClass = "text-yellow-400"
 
                   return (
                     <div key={index} className={`text-sm ${logClass} py-0.5`}>
@@ -534,6 +396,41 @@ export default function JobScheduler() {
         </main>
       </div>
     </div>
+    <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+  <div className="relative p-6 bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden border border-gray-200">
+    
+    {/* Header */}
+    <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center gap-2">
+        <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405M19.595 15.595A2.828 2.828 0 0018 15h-3m-2 0a2.828 2.828 0 00-1.595.595l-1.405 1.405m0 0H4a2 2 0 01-2-2V5a2 2 0 012-2h16a2 2 0 012 2v6" />
+        </svg>
+        <h2 className="text-xl font-bold text-gray-800">Task Output</h2>
+      </div>
+    </div>
+
+    {/* Result Display */}
+    <div className="overflow-auto bg-gray-100 rounded-md p-4 text-sm text-gray-800 font-mono whitespace-pre-wrap max-h-[60vh] border border-gray-200">
+    {result
+  ? result.split('\n').map((item, index) => (
+      <div key={index}>{item}</div>
+    ))
+  : "nothing"}
+    </div>
+
+    {/* Footer */}
+    <div className="flex justify-end mt-6">
+      <button
+        className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-500 transition"
+        onClick={() => setIsModalOpen(false)}
+      >
+        Close
+      </button>
+    </div>
+  </div>
+    </Modal>
+
+    </>
   )
 }
 
@@ -542,19 +439,46 @@ function NonPeriodicTaskForm({ onAddTask }: { onAddTask: (data: any) => void }) 
   const [operationType, setOperationType] = useState<string>("")
   const [path, setPath] = useState<string>("")
 
-  const handleSubmit = (e: React.FormEvent) => {
+  async function OPS(body: any) {
+    try {
+      console.log(operationType);
+      console.log(operation);
+      console.log(path);
+      console.log(body);
+
+      
+      let response:any;
+      if(operation==="read-ops"){
+        console.log(body);
+        response = await axios.post(`http://localhost:3000/api/v1/swarm/${operation}`, body);
+      }else{
+        response = await axios.post(`http://localhost:3000/api/v1/swarm/${operation}`, body);
+      }
+      console.log('Done :', response.data);
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error creating file:', error);
+      throw error;
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!operation || !path) return
+console.log(operationType);
+console.log(path);
+    const requestBody = {
+      taskName: operationType,
+      targetName: path,
+    };
 
-    onAddTask({
-      operation: operation === "read" ? "Read" : "Write",
-      operationType,
-      path,
-    })
-
-    // Reset form
-    setOperationType("")
-    setPath("")
+    try {
+      const result = await OPS(requestBody);
+      console.log("Task successfully sent:", result);
+    } catch (error) {
+      console.error("Failed to submit task", error);
+    }
   }
 
   return (
@@ -569,15 +493,15 @@ function NonPeriodicTaskForm({ onAddTask }: { onAddTask: (data: any) => void }) 
             <Label className="text-zinc-400">Operation Type</Label>
             <RadioGroup value={operation} onValueChange={setOperation} className="flex space-x-4">
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="read" id="read" className="bg-white text-black"/>
-                <Label htmlFor="read" className="flex items-center text-zinc-300">
+                <RadioGroupItem value="read-ops" id="read" className="bg-white text-black"/>
+                <Label htmlFor="read-ops" className="flex items-center text-zinc-300">
                   <FileText className="mr-2 h-4 w-4 text-blue-400" />
                   Read Operation
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="write" id="write" className="bg-white text-black"/>
-                <Label htmlFor="write" className="flex items-center text-zinc-300">
+                <RadioGroupItem value="write-ops" id="write" className="bg-white text-black"/>
+                <Label htmlFor="write-ops" className="flex items-center text-zinc-300">
                   <FilePen className="mr-2 h-4 w-4 text-purple-400" />
                   Write Operation
                 </Label>
@@ -593,17 +517,18 @@ function NonPeriodicTaskForm({ onAddTask }: { onAddTask: (data: any) => void }) 
                   <SelectValue placeholder="Select operation" />
                 </SelectTrigger>
                 <SelectContent className="bg-white border-zinc-800">
-                  {operation === "read" ? (
+                  {operation === "read-ops" ? (
                     <>
-                      <SelectItem value="file-read">File Read</SelectItem>
-                      <SelectItem value="database-query">Database Query</SelectItem>
-                      <SelectItem value="api-fetch">API Fetch</SelectItem>
+                      <SelectItem value="fileRead">get history</SelectItem>
+                      <SelectItem value="lsDir">get lsDir</SelectItem>
+                      <SelectItem value="history">file Read</SelectItem>
                     </>
                   ) : (
                     <>
-                      <SelectItem value="file-write">File Write</SelectItem>
-                      <SelectItem value="database-update">Database Update</SelectItem>
-                      <SelectItem value="api-post">API Post</SelectItem>
+                      <SelectItem value="create-folder">Create folder</SelectItem>
+                      <SelectItem value="create-file">Create file</SelectItem>
+                      <SelectItem value="delete-file">delete file</SelectItem>
+                      <SelectItem value="delete-folder">delete folder</SelectItem>
                     </>
                   )}
                 </SelectContent>
