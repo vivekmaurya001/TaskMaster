@@ -47,68 +47,11 @@ const initialTasks = [
     status: "completed",
     workerId: "worker-03",
   },
-  {
-    id: 2,
-    type: "non-periodic",
-    operation: "Read",
-    operationType: "Database Query",
-    path: "SELECT * FROM users WHERE last_login > NOW() - INTERVAL 24 HOUR",
-    createdAt: "2025-04-09 08:30:15",
-    lastRun: "2025-04-09 08:35:12",
-    status: "completed",
-    workerId: "worker-01",
-  },
-  {
-    id: 3,
-    type: "periodic",
-    frequency: "Daily",
-    path: "/scripts/generate-reports.py",
-    createdAt: "2025-04-07 16:45:30",
-    lastRun: "2025-04-09 00:00:12",
-    nextRun: "2025-04-10 00:00:00",
-    status: "completed",
-    workerId: "worker-02",
-  },
-  {
-    id: 4,
-    type: "non-periodic",
-    operation: "Write",
-    operationType: "File Write",
-    path: "/var/www/html/config/settings.json",
-    createdAt: "2025-04-09 09:50:45",
-    lastRun: "2025-04-09 09:51:22",
-    status: "failed",
-    workerId: "worker-01",
-  },
-  {
-    id: 5,
-    type: "periodic",
-    frequency: "Weekly",
-    path: "/usr/bin/cleanup-temp.sh",
-    createdAt: "2025-04-02 11:20:10",
-    lastRun: "2025-04-07 00:00:05",
-    nextRun: "2025-04-14 00:00:00",
-    status: "pending",
-    workerId: "worker-03",
-  },
 ]
 
 // Dummy logs
 let initialLogs = [
-  "[2025-04-09 10:00:01] [worker-03] Task #1 started: /usr/local/bin/backup-db.sh",
-  "[2025-04-09 10:00:03] [worker-03] Task #1 completed successfully in 2.1s",
-  "[2025-04-09 09:51:20] [worker-01] Task #4 started: Writing to /var/www/html/config/settings.json",
-  "[2025-04-09 09:51:22] [worker-01] Task #4 failed: Permission denied",
-  "[2025-04-09 09:45:00] [system] Worker worker-02 connected",
-  "[2025-04-09 09:30:15] [system] Scheduler service started",
-  "[2025-04-09 09:00:00] [worker-03] Task #5 scheduled for 2025-04-14 00:00:00",
-  "[2025-04-09 08:35:10] [worker-01] Task #2 started: Executing database query",
-  "[2025-04-09 08:35:12] [worker-01] Task #2 completed successfully in 1.8s",
-  "[2025-04-09 08:30:15] [system] New task added: Database Query",
-  "[2025-04-09 08:15:00] [system] Daily system check completed",
-  "[2025-04-09 08:00:01] [worker-02] Memory usage: 42%, CPU usage: 18%",
-  "[2025-04-09 00:00:10] [worker-02] Task #3 started: /scripts/generate-reports.py",
-  "[2025-04-09 00:00:12] [worker-02] Task #3 completed successfully in 2.4s",
+  "[2025-04-09 10:00:01] [worker-03] Task #1 started: /usr/local/bin/backup-db.sh"
 ]
 
 interface LogInfo {
@@ -162,7 +105,7 @@ export default function JobScheduler() {
   async function fetchLogs(): Promise<string[]> {
     try {
       // Tell axios to expect a LogsResponse type
-      const response = await axios.get<LogsResponse>(`${BACKEND_URL}/api/v1/swarm/getlog/`);
+      const response = await axios.post<LogsResponse>(`${BACKEND_URL}/api/v1/swarm/getlog/`);
       const fetchedLogs = response.data.info;
   
       // Map each fetched log object to a formatted string
@@ -192,29 +135,6 @@ export default function JobScheduler() {
       createdAt: new Date().toLocaleString(),
       status: "pending",
       workerId: `worker-0${Math.floor(Math.random() * 3) + 1}`,
-    }
-
-    if (type === "periodic") {
-      // Calculate next run time based on frequency
-      const now = new Date()
-      const nextRun = new Date(now)
-
-      switch (data.frequency.toLowerCase()) {
-        case "hourly":
-          nextRun.setHours(now.getHours() + 1)
-          break
-        case "daily":
-          nextRun.setDate(now.getDate() + 1)
-          break
-        case "weekly":
-          nextRun.setDate(now.getDate() + 7)
-          break
-        case "monthly":
-          nextRun.setMonth(now.getMonth() + 1)
-          break
-      }
-
-      newTask.nextRun = nextRun.toLocaleString()
     }
 
     setTasks((prev) => [newTask, ...prev])
@@ -556,69 +476,134 @@ console.log(path);
 }
 
 function PeriodicTaskForm({ onAddTask }: { onAddTask: (data: any) => void }) {
-  const [frequency, setFrequency] = useState<string>("")
-  const [path, setPath] = useState<string>("")
+  const [startAfter, setStartAfter] = useState({ hh: "", mm: "", ss: "" })
+  const [emailto,setEmailto] =useState("");
+  const [subject,setSubject] =useState("");
+  const [path, setPath] = useState("")
+  function timeToCron(time: { hh: string; mm: string; ss: string }): string {
+    const seconds = time.ss || "0"
+    const minutes = time.mm || "0"
+    const hours = time.hh || "*"
+  
+    return `${seconds} ${minutes} ${hours} * * *`
+  }
+
+  async function PeridOPS(body: any) {
+    try {
+      const response = await axios.post(`http://localhost:3000/app/v1/swarm/getDiskStorageEmail/`, body);
+      console.log('Done :', response.data);
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error creating file:', error);
+      throw error;
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!frequency || !path) return
 
-    onAddTask({
-      frequency,
-      path,
-    })
+    if (!path) return
+
+    const frequency = {
+      startAfter
+    }
+
+    onAddTask({ frequency, path })
+    console.log(timeToCron(startAfter));
+    const requestBody = {
+      cronTime: timeToCron(startAfter),
+      emailto: emailto,
+      subject: subject
+    };
+    console.log(requestBody);
+    try {
+      const result = PeridOPS(requestBody);
+      console.log("Task successfully sent:", result);
+    } catch (error) {
+      console.error("Failed to submit task", error);
+    }
 
     // Reset form
+    setStartAfter({ hh: "", mm: "", ss: "" })
     setPath("")
   }
 
+  const renderTimeInputs = (
+    label: string,
+    value: typeof startAfter,
+    setter: (val: typeof startAfter) => void
+  ) => (
+    <div className="space-y-2">
+      <Label className="text-zinc-400">{label}</Label>
+      <div className="flex gap-2">
+        <Input
+          type="number"
+          placeholder="HH"
+          min="0"
+          className="w-20 bg-white border-zinc-800"
+          value={value.hh}
+          onChange={(e) => setter({ ...value, hh: e.target.value })}
+        />
+        <Input
+          type="number"
+          placeholder="MM"
+          min="0"
+          max="59"
+          className="w-20 bg-white border-zinc-800"
+          value={value.mm}
+          onChange={(e) => setter({ ...value, mm: e.target.value })}
+        />
+        <Input
+          type="number"
+          placeholder="SS"
+          min="0"
+          max="59"
+          className="w-20 bg-white border-zinc-800"
+          value={value.ss}
+          onChange={(e) => setter({ ...value, ss: e.target.value })}
+        />
+      </div>
+    </div>
+  )
+
   return (
-    <Card className="bg-zinc-900 border-zinc-800 ">
+    <Card className="bg-zinc-900 border-zinc-800">
       <CardHeader className="text-cyan-50">
         <CardTitle>Add Periodic Task</CardTitle>
         <CardDescription className="text-zinc-400">Schedule a recurring task</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label className="text-zinc-400">Frequency</Label>
-            <Select value={frequency} onValueChange={setFrequency}>
-              <SelectTrigger className="bg-white border-zinc-800">
-                <SelectValue placeholder="Select frequency" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border-zinc-800">
-                <SelectItem value="Hourly">Hourly</SelectItem>
-                <SelectItem value="Daily">Daily</SelectItem>
-                <SelectItem value="Weekly">Weekly</SelectItem>
-                <SelectItem value="Monthly">Monthly</SelectItem>
-                <SelectItem value="Custom">Custom Cron</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {frequency === "Custom" && (
-            <div className="space-y-2">
-              <Label className="text-zinc-400">Cron Expression</Label>
-              <Input placeholder="* * * * *" className="bg-zinc-950 border-zinc-800" />
-              <p className="text-xs text-zinc-500">Format: minute hour day month weekday</p>
-            </div>
-          )}
+          {renderTimeInputs("Start After", startAfter, setStartAfter)}
 
           <div className="space-y-2">
-            <Label className="text-zinc-400">Execution Path</Label>
+            <Label className="text-zinc-400">Email To:</Label>
             <Input
-              placeholder="Enter path or command to execute"
+              placeholder="Enter...."
               value={path}
-              onChange={(e) => setPath(e.target.value)}
+              onChange={(e) => setEmailto(e.target.value)}
+              className="bg-white border-zinc-800"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-zinc-400">Subject</Label>
+            <Input
+              placeholder="Enter...."
+              value={path}
+              onChange={(e) => setSubject(e.target.value)}
               className="bg-white border-zinc-800"
             />
           </div>
 
-          <Button type="submit" disabled={!frequency || !path} className="bg-purple-700 hover:bg-purple-600">
+          <Button
+            type="submit"
+            disabled={!path}
+            className="bg-purple-700 hover:bg-purple-600"
+          >
             Add Task
           </Button>
         </form>
       </CardContent>
     </Card>
-  )
-}
+  )}
