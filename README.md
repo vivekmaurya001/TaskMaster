@@ -2,7 +2,7 @@
 
 ## 🚀 About the Project
 
-This is the frontend for **AutoChronos**, a distributed job scheduling platform that supports both periodic and one-time jobs. Users can input shell commands via this web interface, which are then scheduled and executed by distributed worker nodes through a powerful backend system.
+This is the frontend for **TaskMaster**, a distributed job scheduling platform that supports both periodic and one-time jobs. Users can input shell commands via this web interface, which are then scheduled and executed by distributed worker nodes through a powerful backend system.
 
 ## 🛠️ Backend Overview
 
@@ -17,7 +17,6 @@ The backend of AutoChronos is designed to handle job scheduling and execution wi
 - [Next.js](https://nextjs.org/) – React-based framework for fast frontend development
 - [Tailwind CSS](https://tailwindcss.com/) – Utility-first CSS for styling
 - [Axios](https://axios-http.com/) – For making API requests to the backend
-- [Vercel](https://vercel.com/) – Deployment platform for hosting the frontend
 
 ---
 
@@ -39,14 +38,7 @@ The backend of AutoChronos is designed to handle job scheduling and execution wi
     pnpm dev
     ```
 
-5. Open [http://localhost:3001](http://localhost:3000) to view the site.
-
----
-
-## 🌐 Deployed Links
-
-- **Frontend (Vercel):** [http://localhost:3001](http://localhost:3000)
-- **Backend (Render):** [http://localhost:3000](http://localhost:3001)
+5. Open [http://localhost:3000](http://localhost:3000) to view the site.
 
 ---
 
